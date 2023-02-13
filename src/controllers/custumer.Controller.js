@@ -16,3 +16,11 @@ export async function insertCustomer(req, res) {
     res.status(500).send(error.message);
   }
 }
+export async function listCustomers(req, res) {
+  try {
+    const list = await db.query("SELECT * FROM customers");
+    return res.send(list.rows);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+}
