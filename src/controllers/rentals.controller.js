@@ -53,23 +53,24 @@ export async function listRentals(req, res) {
 
 export async function finishRental(req, res) {
   try {
-    const { returnDate, rentDate, pricePerDay, delayFee, id } =
-      res.locals.finish;
+    const rent = res.locals.finish;
 
-    returnDate = dayjs().format("YYYY-MM-DD");
-    rentDate = dayjs(rentDate);
+    rent.returnDate = dayjs().format("YYYY-MM-DD");
+    rent.rentDate = dayjs(rent.rentDate);
 
-    const shouldReturn = rentDate.add(daysRented, "day");
+    const shouldReturn = rent.rentDate.add(rent.daysRented, "day");
 
     if (shouldReturn.isBefore(rent.returnDate)) {
-      delayFee = -(shouldReturn.diff(returnDate, "days") * pricePerDay);
+      rent.delayFee = -(
+        shouldReturn.diff(rent.returnDate, "days") * rent.pricePerDay
+      );
     } else {
-      delayFee = null;
+      rent.delayFee = null;
     }
 
     await db.query(
       'UPDATE rentals SET "delayFee"=$1, "rentDate"=$2, "returnDate"=$3 WHERE id=$4',
-      [delayFee, rentDate, returnDate, id]
+      [rent.delayFee, rent.rentDate, rent.returnDate, rent.id]
     );
 
     res.sendStatus(200);
