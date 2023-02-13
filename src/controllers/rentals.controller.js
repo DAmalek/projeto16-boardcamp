@@ -1,0 +1,101 @@
+import dayjs from "dayjs";
+import { db } from "../config/database.connection.js";
+
+export async function insertRental(req, res) {
+  const {
+    customerId,
+    gameId,
+    rentDate,
+    daysRented,
+    returnDate,
+    originalPrice,
+    delayFee,
+  } = res.locals.rental;
+  try {
+    await db.query(
+      `INSERT INTO rentals ("customerId","gameId","rentDate","daysRented","returnDate","originalPrice","delayFee") 
+        VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+      [
+        customerId,
+        gameId,
+        rentDate,
+        daysRented,
+        returnDate,
+        originalPrice,
+        delayFee,
+      ]
+    );
+    res.sendStatus(201);
+  } catch (error) {
+    console.log("Erro rentals");
+    res.status(500).send(error.message);
+  }
+}
+
+export async function listRentals(req, res) {
+  try {
+    const rentals = await db.query(`
+        SELECT rentals.*, 
+               JSON_BUILD_OBJECT('id', customers.id, 'name', customers.name) AS customer,
+               JSON_BUILD_OBJECT('id', games.id, 'name', games.name) AS game
+        FROM rentals
+        INNER JOIN customers 
+            ON rentals."customerId"=customers.id
+        INNER JOIN games 
+            ON rentals."gameId"=games.id
+        ;`);
+
+    res.send(rentals.rows);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+}
+
+export async function finishRental(req, res) {
+  try {
+    const { returnDate, rentDate, pricePerDay, delayFee, id } =
+      res.locals.finish;
+
+    returnDate = dayjs().format("YYYY-MM-DD");
+    rentDate = dayjs(rentDate);
+
+    const shouldReturn = rentDate.add(daysRented, "day");
+
+    if (shouldReturn.isBefore(rent.returnDate)) {
+      delayFee = -(shouldReturn.diff(returnDate, "days") * pricePerDay);
+    } else {
+      delayFee = null;
+    }
+
+    await db.query(
+      'UPDATE rentals SET "delayFee"=$1, "rentDate"=$2, "returnDate"=$3 WHERE id=$4',
+      [delayFee, rentDate, returnDate, id]
+    );
+
+    res.sendStatus(200);
+  } catch (error) {
+    res.status(505).send(error.message);
+  }
+}
+export async function deleteRental(req, res) {
+  const { id } = req.params;
+  const numberId = Number(id);
+
+  try {
+    const rentalExists = await db.query(
+      `SELECT *
+            FROM rentals WHERE id = $1;`,
+      [numberId]
+    );
+    if (rentalExists.rowCount === 0) return res.sendStatus(404);
+
+    const rental = rentalExists.rows[0];
+    if (rental.returnDate === null) return res.sendStatus(400);
+
+    await db.query(`DELETE FROM rentals WHERE id = $1;`, [numberId]);
+    res.sendStatus(200);
+  } catch (error) {
+    console.log("Erro no delete de um rental");
+    res.status(500).send(error.message);
+  }
+}
