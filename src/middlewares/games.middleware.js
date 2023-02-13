@@ -1,11 +1,11 @@
-import { db } from "../config/database.connection";
+import { db } from "../config/database.connection.js";
 
 export async function gamesValidation(req, res, next) {
   const { name } = req.body;
 
   try {
     const nameExists = await db.query(
-      `SELECT * FROM games WHERE name = ${name}`
+      `SELECT * FROM games WHERE name = ${name};`
     );
 
     if (nameExists) {

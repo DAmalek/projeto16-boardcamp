@@ -1,4 +1,4 @@
-import { db } from "../config/database.connection";
+import { db } from "../config/database.connection.js";
 
 export async function insertGame(req, res) {
   const { name, image, stockTotal, pricePerDay } = req.body;
@@ -7,7 +7,7 @@ export async function insertGame(req, res) {
     const game = await db.query(
       `INSERT INTO games (name,image,stockTotal, pricePerDay) VALUES (${
         (name, image, stockTotal, pricePerDay)
-      })`
+      });`
     );
     console.log(receita);
 
@@ -19,8 +19,10 @@ export async function insertGame(req, res) {
 
 export async function listGames(req, res) {
   try {
-    const games = await db.query(`SELECT * FROM games`);
+    const games = await db.query(`SELECT * FROM games;`);
 
     res.send(games.rows);
-  } catch (error) {}
+  } catch (error) {
+    return res.status(500).send(error);
+  }
 }
